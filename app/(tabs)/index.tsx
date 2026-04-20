@@ -1,9 +1,8 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import StatCard from "../../components/StatCard";
-import SearchBar from "../../components/SearchBar";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import ProblemCard from "../../components/ProblemCard";
-import { problems } from "../../data/problems";
-
+import SearchBar from "../../components/SearchBar";
+import StatCard from "../../components/StatCard";
+import { problems } from "../data/problems";
 export default function Home() {
   return (
     <ScrollView style={styles.container}>
