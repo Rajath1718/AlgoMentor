@@ -1,57 +1,60 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-
-const topics = [
-  { name: "Arrays", progress: 70, color: "#FF7043" },
-  { name: "Linked List", progress: 50, color: "#66BB6A" },
-  { name: "Trees", progress: 30, color: "#42A5F5" },
-  { name: "Graphs", progress: 20, color: "#EF5350" },
-  { name: "DP", progress: 10, color: "#FFA726" },
-];
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Topics() {
+  const topics = [
+    "Arrays",
+    "Linked List",
+    "Trees",
+    "Graphs",
+    "Dynamic Programming",
+  ];
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Learning Paths</Text>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ScrollView style={styles.container}>
+        <Text style={styles.title}>Topics</Text>
 
-      {topics.map((t, i) => (
-        <View key={i} style={styles.card}>
-          <Text style={styles.name}>{t.name}</Text>
-
-          <View style={styles.bar}>
-            <View
-              style={[
-                styles.fill,
-                { width: `${t.progress}%`, backgroundColor: t.color },
-              ]}
-            />
+        {topics.map((topic, index) => (
+          <View key={index} style={styles.card}>
+            <Text style={styles.topic}>{topic}</Text>
+            <Text style={styles.subtitle}>
+              Learn and practice problems
+            </Text>
           </View>
-
-          <Text style={styles.percent}>{t.progress}% Complete</Text>
-        </View>
-      ))}
-    </ScrollView>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 10 },
+  container: {
+    padding: 16,
+    backgroundColor: "#F5F7F6",
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+
   card: {
     backgroundColor: "#fff",
     padding: 16,
-    marginBottom: 12,
     borderRadius: 12,
+    marginBottom: 12,
+    elevation: 2,
   },
-  name: { fontSize: 16, fontWeight: "bold" },
-  bar: {
-    height: 8,
-    backgroundColor: "#eee",
-    borderRadius: 6,
-    marginTop: 8,
+
+  topic: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
-  fill: {
-    height: 8,
-    borderRadius: 6,
+
+  subtitle: {
+    color: "#666",
+    marginTop: 4,
   },
-  percent: { marginTop: 6, color: "#666" },
 });
