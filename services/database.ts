@@ -16,11 +16,17 @@ export const initDatabase = async () => {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      name TEXT DEFAULT '',
-      bio TEXT DEFAULT ''
+      password TEXT NOT NULL
     );
   `);
+
+  try {
+    await database.execAsync(`ALTER TABLE users ADD COLUMN name TEXT DEFAULT '';`);
+  } catch {}
+
+  try {
+    await database.execAsync(`ALTER TABLE users ADD COLUMN bio TEXT DEFAULT '';`);
+  } catch {}
 };
 
 export const registerUser = async (email: string, password: string) => {

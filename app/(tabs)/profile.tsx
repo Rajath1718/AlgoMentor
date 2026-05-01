@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -37,19 +39,18 @@ export default function ProfileScreen() {
 
     if (Platform.OS === "web") {
       currentUser = localStorage.getItem("currentUser") || "";
+    } else {
+      currentUser = (await AsyncStorage.getItem("currentUser")) || "";
     }
 
-    if (!currentUser) {
-      Alert.alert("Error", "No logged-in user found.");
-      return;
-    }
+    if (!currentUser) return;
 
     const user: any = await getUserProfile(currentUser);
 
     if (user) {
       setEmail(user.email);
-      setName(user.name || "");
-      setBio(user.bio || "");
+      setName(user.name || "New User");
+      setBio(user.bio || "No bio added yet.");
     }
   };
 
@@ -67,13 +68,15 @@ export default function ProfileScreen() {
       } else {
         Alert.alert("Success", "Profile updated successfully!");
       }
+
+      setIsEditing(false);
       await loadProfile();
     } else {
       Alert.alert("Error", "Failed to update profile.");
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (Platform.OS === "web") {
       const confirmed = window.confirm("Are you sure you want to logout?");
       if (confirmed) {
@@ -83,64 +86,69 @@ export default function ProfileScreen() {
       return;
     }
 
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await AsyncStorage.removeItem("currentUser");
+          router.replace("/login");
         },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: () => {
-            router.replace("/login");
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
             <Ionicons name="person" size={50} color="#FFFFFF" />
           </View>
-
+          <Text style={styles.nameDisplay}>{name}</Text>
           <Text style={styles.email}>{email}</Text>
         </View>
 
-        {/* Profile Form */}
-        <View style={styles.formContainer}>
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter your name"
-            placeholderTextColor="#9CA3AF"
-          />
+        {!isEditing ? (
+          <View style={styles.profileViewContainer}>
+            <Text style={styles.sectionTitle}>About Me</Text>
+            <Text style={styles.bioText}>{bio}</Text>
 
-          <Text style={styles.label}>Bio</Text>
-          <TextInput
-            style={[styles.input, styles.bioInput]}
-            value={bio}
-            onChangeText={setBio}
-            placeholder="Enter your bio"
-            placeholderTextColor="#9CA3AF"
-            multiline
-          />
+            <Pressable
+              style={styles.editButton}
+              onPress={() => setIsEditing(true)}
+            >
+              <Text style={styles.editButtonText}>Edit Profile</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.formContainer}>
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter your name"
+              placeholderTextColor="#9CA3AF"
+            />
 
-          <Pressable style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveText}>Save Profile</Text>
-          </Pressable>
-        </View>
+            <Text style={styles.label}>Bio</Text>
+            <TextInput
+              style={[styles.input, styles.bioInput]}
+              value={bio}
+              onChangeText={setBio}
+              placeholder="Enter your bio"
+              placeholderTextColor="#9CA3AF"
+              multiline
+            />
 
-        {/* Logout */}
+            <Pressable style={styles.saveButton} onPress={handleSave}>
+              <Text style={styles.saveText}>Save Profile</Text>
+            </Pressable>
+          </View>
+        )}
+
         <Pressable style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutText}>Logout</Text>
         </Pressable>
@@ -162,11 +170,6 @@ const styles = StyleSheet.create({
     paddingVertical: 36,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
-    shadowColor: "#2ECC71",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
   },
   avatarContainer: {
     width: 90,
@@ -177,10 +180,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 14,
   },
+  nameDisplay: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
   email: {
     fontSize: 16,
     color: "#D1F2EB",
     fontWeight: "600",
+  },
+  profileViewContainer: {
+    padding: 24,
+    alignItems: "center",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E5631",
+    marginBottom: 12,
+  },
+  bioText: {
+    fontSize: 16,
+    color: "#374151",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  editButton: {
+    backgroundColor: "#1E5631",
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+  },
+  editButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
   formContainer: {
     padding: 24,
@@ -212,11 +249,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     marginTop: 20,
-    shadowColor: "#2ECC71",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
   },
   saveText: {
     color: "#FFFFFF",
@@ -230,11 +262,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
-    shadowColor: "#E53935",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
   },
   logoutText: {
     color: "#FFFFFF",

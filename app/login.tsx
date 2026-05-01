@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -37,6 +38,8 @@ export default function LoginScreen() {
     if (user) {
       if (Platform.OS === "web") {
         localStorage.setItem("currentUser", cleanEmail);
+      } else {
+        await AsyncStorage.setItem("currentUser", cleanEmail);
       }
 
       Alert.alert("Success", "Login successful!");
