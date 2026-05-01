@@ -1,205 +1,209 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
-  Keyboard,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
-  ScrollView,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-interface Message {
+import { askAI } from "../../services/openai";
+
+type Message = {
   id: string;
   text: string;
-  type: "user" | "ai";
-}
+  sender: "user" | "ai";
+};
 
-export default function Chat() {
-  const [input, setInput] = useState("");
+export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Explain Two Sum problem",
-      type: "user",
-    },
-    {
-      id: "2",
-      text: "Two Sum asks you to find two numbers that add up to a target. Use a HashMap for O(n) solution.",
-      type: "ai",
+      text: "Hi! I'm AlgoMentor AI. Ask me anything about coding, DSA, or algorithms.",
+      sender: "ai",
     },
   ]);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
-    const newMessage: Message = {
-      id: String(Date.now()),
+    const userMessage: Message = {
+      id: Date.now().toString(),
       text: input,
-      type: "user",
+      sender: "user",
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    Keyboard.dismiss();
+    setLoading(true);
 
-    // Fake AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: String(Date.now() + 1),
-        text: "Nice question! Try thinking in terms of hash maps for optimization.",
-        type: "ai",
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-    }, 600);
+    const aiResponse = await askAI(input);
+
+    const aiMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      text: aiResponse,
+      sender: "ai",
+    };
+
+    setMessages((prev) => [...prev, aiMessage]);
+    setLoading(false);
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        {/* HEADER */}
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.innerContainer}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        {/* Header */}
         <View style={styles.header}>
-          <Ionicons name="chatbubble-ellipses" size={24} color="#1E5631" />
-          <Text style={styles.headerTitle}>AI Chat</Text>
+          <Text style={styles.title}>AlgoMentor AI</Text>
+          <Text style={styles.subtitle}>
+            Your personal coding mentor
+          </Text>
         </View>
 
-        {/* MESSAGES */}
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.messages}
-          onContentSizeChange={() =>
-            scrollViewRef.current?.scrollToEnd({ animated: true })
-          }
-        >
-          {messages.map((msg) => (
+        {/* Chat Messages */}
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.chatContainer}
+          renderItem={({ item }) => (
             <View
-              key={msg.id}
               style={[
-                styles.messageWrapper,
-                msg.type === "user"
-                  ? styles.userWrapper
-                  : styles.aiWrapper,
+                styles.messageBubble,
+                item.sender === "user"
+                  ? styles.userBubble
+                  : styles.aiBubble,
               ]}
             >
-              <View
+              <Text
                 style={[
-                  styles.bubble,
-                  msg.type === "user"
-                    ? styles.userBubble
-                    : styles.aiBubble,
+                  styles.messageText,
+                  item.sender === "user"
+                    ? styles.userText
+                    : styles.aiText,
                 ]}
               >
-                <Text
-                  style={
-                    msg.type === "user"
-                      ? styles.userText
-                      : styles.aiText
-                  }
-                >
-                  {msg.text}
-                </Text>
-              </View>
+                {item.text}
+              </Text>
             </View>
-          ))}
-        </ScrollView>
+          )}
+        />
 
-        {/* INPUT */}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#1E5631" />
+          </View>
+        )}
+
+        {/* Input */}
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder="Ask about DSA..."
+            style={styles.input}
+            placeholder="Ask anything..."
+            placeholderTextColor="#9CA3AF"
             value={input}
             onChangeText={setInput}
-            style={styles.input}
           />
 
-          <Pressable
-            onPress={handleSend}
-            style={[
-              styles.sendBtn,
-              !input.trim() && styles.disabledBtn,
-            ]}
-            disabled={!input.trim()}
-          >
-            <Ionicons name="send" size={18} color="#fff" />
+          <Pressable style={styles.sendButton} onPress={handleSend}>
+            <Ionicons name="send" size={20} color="#FFFFFF" />
           </Pressable>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFBF9" },
-
+  container: {
+    flex: 1,
+    backgroundColor: "#FAFBF9",
+  },
+  innerContainer: {
+    flex: 1,
+  },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
+    backgroundColor: "#1E5631",
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#D1F2EB",
+    marginTop: 4,
+  },
+  chatContainer: {
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
-
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginLeft: 10,
-    color: "#1E5631",
-  },
-
-  messages: { flex: 1, padding: 12 },
-
-  messageWrapper: { marginVertical: 6, flexDirection: "row" },
-
-  userWrapper: { justifyContent: "flex-end" },
-  aiWrapper: { justifyContent: "flex-start" },
-
-  bubble: {
-    padding: 12,
-    borderRadius: 12,
+  messageBubble: {
     maxWidth: "80%",
+    padding: 14,
+    borderRadius: 18,
+    marginBottom: 12,
   },
-
   userBubble: {
     backgroundColor: "#1E5631",
-    borderBottomRightRadius: 2,
+    alignSelf: "flex-end",
   },
-
   aiBubble: {
-    backgroundColor: "#E8F5F1",
-    borderBottomLeftRadius: 2,
+    backgroundColor: "#FFFFFF",
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
-
-  userText: { color: "#fff" },
-  aiText: { color: "#2C3E3A" },
-
-  inputContainer: {
-    flexDirection: "row",
-    padding: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-    alignItems: "center",
+  messageText: {
+    fontSize: 15,
+    lineHeight: 22,
   },
-
-  input: {
-    flex: 1,
-    backgroundColor: "#F2F2F2",
-    borderRadius: 20,
-    paddingHorizontal: 15,
+  userText: {
+    color: "#FFFFFF",
+  },
+  aiText: {
+    color: "#111827",
+  },
+  loadingContainer: {
     paddingVertical: 8,
   },
-
-  sendBtn: {
-    marginLeft: 10,
-    backgroundColor: "#2ECC71",
-    padding: 10,
-    borderRadius: 20,
+  inputContainer: {
+    flexDirection: "row",
+    padding: 14,
+    borderTopWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
   },
-
-  disabledBtn: {
-    backgroundColor: "#BDBDBD",
+  input: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: "#111827",
+  },
+  sendButton: {
+    marginLeft: 10,
+    backgroundColor: "#1E5631",
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
