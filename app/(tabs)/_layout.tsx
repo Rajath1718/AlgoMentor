@@ -11,8 +11,8 @@ export default function TabLayout() {
         headerShown: false,
 
         tabBarStyle: {
-          height: 60 + insets.bottom,   // 🔥 FIX
-          paddingBottom: insets.bottom, // 🔥 FIX
+          height: 60 + insets.bottom,   
+          paddingBottom: insets.bottom, 
           paddingTop: 6,
         },
       }}
